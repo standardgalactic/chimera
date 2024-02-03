@@ -30,6 +30,7 @@ async def corpus_merge(disable_bars: bool | None) -> None:
         raise error
     rmdir(CORPUS_ORIGINAL)
     corpus_trim(disable_bars=disable_bars)
+    await corpus_freeze("unit_tests/fuzz/cases.json", disable_bars=None)
 
 
 async def corpus_merge_main(base_reference: str = "HEAD") -> None:
@@ -39,9 +40,6 @@ async def corpus_merge_main(base_reference: str = "HEAD") -> None:
         "unit_tests/fuzz/corpus", base_reference=base_reference, disable_bars=None
     )
     await corpus_merge(disable_bars=None)
-    await corpus_freeze(
-        "unit_tests/fuzz/cases.json", base_reference=base_reference, disable_bars=None
-    )
 
 
 if __name__ == "__main__":

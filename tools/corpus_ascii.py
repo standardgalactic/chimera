@@ -30,6 +30,12 @@ if __name__ == "__main__":
         paths = sorted(corpus_ascii())
         for file in paths:
             get_logger().info(file)
-        for name, contents in groupby(paths, lambda file: bucket(file).name):
-            total = len([elem for elem in contents])
-            get_logger().info(f"{name}: {total} / {total * 100 // len(paths) / 100}")
+        for (name, contents), (_, corpus) in zip(
+            groupby(paths, lambda file: bucket(file).name),
+            groupby(sorted(gather_paths()), lambda file: bucket(file).name),
+        ):
+            total = len(list(corpus))
+            ascii = len(list(contents))
+            get_logger().info(
+                f"{name}: {ascii} / {total} -> {ascii * 100 // total / 100}"
+            )
