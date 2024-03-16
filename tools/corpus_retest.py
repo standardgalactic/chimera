@@ -9,6 +9,7 @@ from asyncio_as_completed import as_completed
 from asyncio_cmd import ProcessError, cmd_flog, main
 from cmake_codecov import cmake_codecov
 from corpus_utils import corpus_merge, corpus_trim, fuzz_star, regression
+from ninja import ninja
 from structlog import get_logger
 
 SOURCE = Path(__file__).parent.parent.resolve()
@@ -79,11 +80,14 @@ async def corpus_retest() -> None:
     await corpus_merge(disable_bars=None)
 
 
-async def corpus_retest_main(build: str) -> None:
+async def corpus_retest_main(build: str, ref: str = "") -> None:
     await cmake_codecov("fuzzers")
     await corpus_retest()
     await regression(build)
     corpus_trim(disable_bars=None)
+    if ref == "refs/heads/stable":
+        await ninja(build, "corpus")
+        await corpus_merge(disable_bars=None)
 
 
 if __name__ == "__main__":
