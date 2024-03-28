@@ -16,7 +16,11 @@ jobs:
             select(
               (.run_started_at | fromdate) < (now - 60 * 60 * 24) and
               .conclusion != null and
-              .head_branch != null and
+              (
+                .head_branch != null or
+                (.name | startswith("PR #")) or
+                (.pull_requests[0].head.ref // "" | length > 0)
+              ) and
               .status != "in_progress"
             ) |
             select(
@@ -24,7 +28,11 @@ jobs:
               (.head_branch != "stable" and .conclusion == "cancelled") or
               (
                 (.run_started_at | fromdate) < (now - 60 * 60 * 24 * 7) and
-                .head_branch != "stable"
+                (
+                  .head_branch != "stable" or
+                  (.name | startswith("PR #")) or
+                  (.pull_requests[0].head.ref // "" | length > 0)
+                )
               ) or (
                 (.path | startswith(".github/workflows/actions")) and
                 (.run_started_at | fromdate) < (now - 60 * 60 * 24 * 2)
@@ -79,6 +87,7 @@ jobs:
         name: Rerun
         run: >
           set -o pipefail;
+          set -ex;
           gh api "repos/${REPO}/actions/runs" --paginate -q '
             .workflow_runs[] |
             select(
@@ -94,16 +103,31 @@ jobs:
           ' |
           xargs --max-args=1 --max-procs=2 --no-run-if-empty --null --verbose --
           gh api -X POST || true;
+          job_names="$(gh api "repos/${REPO}/actions/runs" --paginate -q '
+            .workflow_runs[] |
+            select(
+              (.run_started_at | fromdate) > (now - 60 * 60 * 24 * 14) and
+              .head_branch == "stable" and
+              .conclusion == "cancelled"
+            ) |
+            {path}
+          ' |
+          jq --compact-output --slurp 'map(.path) | sort | unique')";
           while gh api "repos/${REPO}/actions/runs" --paginate -q '
             .workflow_runs[] |
             select(
               .head_branch == "stable" and
               .conclusion == null
             ) |
-            {id, url}
+            {id, path, url}
           ' |
-          jq --argjson run_id "${RUN_ID}" --exit-status --slurp '
-            debug | map(select(.id != $run_id)) | length > 0
+          jq
+          --argjson run_id "${RUN_ID}"
+          --argjson job_names "${job_names}"
+          --exit-status --slurp '
+            debug |
+            map(select(.id != $run_id and ([.path] | inside($job_names)))) |
+            length > 0
           ' >/dev/null; do
             sleep 60;
           done;
