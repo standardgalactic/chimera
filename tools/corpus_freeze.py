@@ -117,6 +117,7 @@ BAD_KEYS = frozenset((
     "d6adbf067cf542805290c59af6bc204ecec6ac12",
     "d6b8903dde20c3edbe18f05062fadefd3453b28c",
     "d8314a8e49fd591c1e7e45eb8388e7306743f0ce",
+    "da3c0f8dd4447bc17fb4fb7b6b11569091abdc11",
     "de2e4a649d4b6745c4a7cb9d4e42d2d3acff5faf",
     "e0c71a2ea37a952deec56378c066f5814bf66124",
     "e85f588bab00c34b64bfb51a0bd12d3dde2d8357",
