@@ -12,6 +12,11 @@
       - python: python{{ py_version }}
         venv: /opt/edge-virtualenv
   tasks:
+    - name: Ansible remote temp directory
+      ansible.builtin.file:
+        path: "{{ ansible_remote_tmp | default('~/.ansible/tmp') }}"
+        state: directory
+        mode: "0755"
     - name: Unix block
       become: true
       when: ansible_facts.os_family != 'Darwin'
@@ -358,6 +363,11 @@
           become_user: github
           become: true
           block:
+            - name: Ansible remote temp directory
+              ansible.builtin.file:
+                path: "{{ ansible_remote_tmp | default('~/.ansible/tmp') }}"
+                state: directory
+                mode: "0755"
             - name: Download rustup install script
               ansible.builtin.get_url:
                 dest: /tmp/sh.rustup.rs
@@ -463,6 +473,10 @@
                   /usr/local/bin
                   /usr/lib/ninja-build/bin
                 executable: "{{ fish_shell.stdout }}"
+            - name: Ansible remote temp directory
+              ansible.builtin.file:
+                path: "{{ ansible_remote_tmp | default('~/.ansible/tmp') }}"
+                state: absent
         - name: Set fish shell
           ansible.builtin.user:
             name: github
@@ -504,4 +518,8 @@
           ansible.builtin.command: pyenv install {{ py_version }}-dev
           args:
             creates: "{{ lookup('env', 'HOME') }}/.pyenv/versions/{{ py_version }}-dev"
+    - name: Ansible remote temp directory
+      ansible.builtin.file:
+        path: "{{ ansible_remote_tmp | default('~/.ansible/tmp') }}"
+        state: absent
 # yamllint enable rule:key-ordering
