@@ -59,7 +59,7 @@ async def commit_count(*paths: str, base_reference: str, diff_filter: str) -> in
                     "--",
                     *paths,
                     out=PIPE,
-                ),
+                )
             )
         )
     )
