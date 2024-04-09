@@ -22,12 +22,16 @@ async def apply_patches() -> None:
         await cmd("git", "-C", external, "apply", patch.resolve())
 
 
-async def cmake_ninja(build: str = "build", *args: object) -> None:
+async def cmake(build: str) -> None:
     chdir(Path(__file__).parent.parent)
     environ["CPPFLAGS"] = " ".join((cppflags, environ.get("CPPFLAGS", "")))
     environ["CXXFLAGS"] = " ".join((cppflags, environ.get("CXXFLAGS", "")))
     await apply_patches()
     await cmd("cmake", "-G", "Ninja", "-B", build, "-S", ".")
+
+
+async def cmake_ninja(build: str = "build", *args: object) -> None:
+    await cmake(build)
     await ninja(build, "unit-test")
     await ninja(build, "test")
     if args:
