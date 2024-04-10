@@ -27,4 +27,6 @@ on:
   push:
     paths:
       - .github/workflows/corpus-merge.yml
+  schedule:
+    - cron: 53 11 * * 5
   workflow_dispatch: ~

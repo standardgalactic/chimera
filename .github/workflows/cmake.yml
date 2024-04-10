@@ -17,8 +17,6 @@ jobs:
         with:
           run: |
             rustup default stable
-            python tools/crash_reset.py
-            python tools/corpus_gather.py "${GITHUB_REF}"
             python tools/corpus_retest.py build "${GITHUB_REF}"
       - continue-on-error: true
         uses: stefanzweifel/git-auto-commit-action@v5.0.0

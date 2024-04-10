@@ -78,19 +78,6 @@ async def cmd(
     )
 
 
-async def _cmd_check(*args: str) -> Exception | None:
-    try:
-        proc = await create_subprocess_exec(*args, stderr=DEVNULL, stdout=DEVNULL)
-        await communicate(*args, err=b"", proc=proc)
-    except ProcessError as error:
-        return error
-    return None
-
-
-async def cmd_check(*args: object) -> Exception | None:
-    return await _cmd_check(*(str(arg) for arg in args))
-
-
 async def _cmd_env(
     *args: str,
     env: dict[str, object] = {},

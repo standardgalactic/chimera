@@ -1,16 +1,17 @@
 """corpus_utils.py"""
 
-from asyncio.subprocess import PIPE
+from asyncio.subprocess import DEVNULL, PIPE
 from functools import cache
 from hashlib import sha256
 from os import environ
 from pathlib import Path
-from re import MULTILINE, compile, finditer
+from re import MULTILINE, compile, escape, finditer
 from typing import Iterable, Match, TypeVar
 
 from asyncio_as_completed import as_completed
-from asyncio_cmd import chunks, cmd_check, cmd_flog, git_cmd, splitlines
+from asyncio_cmd import chunks, cmd, cmd_flog, git_cmd, splitlines
 from chimera_utils import IN_CI, rmdir
+from crash_reset import crash_reset
 from structlog import get_logger
 from tqdm import tqdm
 
@@ -44,6 +45,14 @@ def c_tqdm(
     if IN_CI and disable is not False:
         return iterable
     return tqdm(iterable, desc=desc, disable=disable, total=total, unit_scale=True)
+
+
+async def cmd_check(*args: object) -> Exception | None:
+    try:
+        await cmd(*args, err=DEVNULL, out=DEVNULL)
+    except Exception as error:
+        return error
+    return None
 
 
 async def commit_count(*paths: str, base_reference: str, diff_filter: str) -> int:
@@ -224,6 +233,18 @@ async def corpus_gather(
     corpus_trim(disable_bars=disable_bars)
 
 
+async def corpus_gather_new(
+    *paths: str,
+    disable_bars: bool | None,
+) -> None:
+    for path in paths:
+        Path(path).mkdir(exist_ok=True, parents=True)
+        for sha, case in await corpus_objects_new(path, disable_bars=disable_bars):
+            new_file = Path(path) / sha
+            new_file.write_bytes(case)
+    corpus_trim(disable_bars=disable_bars)
+
+
 async def corpus_merge(disable_bars: bool | None) -> None:
     rmdir(CORPUS_ORIGINAL)
     CORPUS.rename(CORPUS_ORIGINAL)
@@ -324,6 +345,22 @@ async def corpus_objects_new(
     )
 
 
+async def corpus_retest() -> None:
+    await corpus_gather_new(
+        "unit_tests/fuzz/crashes", "unit_tests/fuzz/corpus", disable_bars=None
+    )
+    CRASHES.mkdir(exist_ok=True, parents=True)
+    crash_reset()
+    while await regression_log():
+        await get_logger().ainfo(
+            "Regression failed, retrying with"
+            f" {len([path for path in CORPUS.rglob('*') if path.is_file()])} cases"
+        )
+    for done in CORPUS.rglob(".done"):
+        done.unlink()
+    await corpus_merge(disable_bars=None)
+
+
 def corpus_trim_one(fuzz: Iterable[Path], disable_bars: bool | None) -> None:
     global LENGTH
     for file in c_tqdm(fuzz, "Corpus rehash", disable_bars):
@@ -372,6 +409,12 @@ def corpus_trim(disable_bars: bool | None) -> None:
             LENGTH += 1
             continue
         break
+
+
+def fuzz_output_paths(prefix: bytes, output: bytes) -> frozenset[bytes]:
+    return frozenset(
+        m["path"] for m in finditer(escape(prefix) + rb"\s+(?P<path>\S+)", output)
+    )
 
 
 @cache
@@ -423,6 +466,50 @@ async def regression(
         ),
         return_exceptions=return_exceptions,
     )
+
+
+async def regression_log() -> list[Exception]:
+    return [
+        exc
+        for exc in await as_completed(
+            regression_log_one(fuzz, *args)
+            for args in (
+                frozenset(
+                    path
+                    for path in corpus.glob("*")
+                    if path.is_file() and path.name != ".done"
+                )
+                for corpus in CORPUS.glob("*")
+                if not (corpus / ".done").exists()
+            )
+            for fuzz in fuzz_star()
+            if args
+        )
+        if exc is not None
+    ]
+
+
+async def regression_log_one(fuzzer: Path, *chunk: Path) -> Exception | None:
+    log_file = Path("/tmp") / f"{fuzzer.name}-{chunk[0].parent.name}.log"
+    log_file.write_bytes(b"")
+    try:
+        await cmd_flog(fuzzer, *chunk, out=str(log_file))
+    except Exception as err:
+        return err
+    finally:
+        log_output = log_file.read_bytes()
+        for file in (
+            Path(path.decode())
+            for path in fuzz_output_paths(b"Running:", log_output)
+            - fuzz_output_paths(b"Executed", log_output)
+        ):
+            try:
+                file.rename(CRASHES / (file.parent.name + file.name))
+            except FileNotFoundError:
+                pass
+        log_file.unlink(missing_ok=True)
+    (chunk[0].parent / ".done").touch()
+    return None
 
 
 def sha(path: Path) -> str:
