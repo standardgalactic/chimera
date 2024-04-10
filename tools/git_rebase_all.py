@@ -21,8 +21,36 @@ async def git_diff(*args: str) -> bool:
     return True
 
 
-async def git_no_edit(*args: str) -> None:
-    await cmd_env("git", *args, env={"EDITOR": "true"}, err=None, log=False)
+async def git_log_one(branch: str, format: str) -> str:
+    try:
+        log_out = await git_cmd(
+            "log", f"--format={format}", "--max-count=1", f"origin/{branch}", out=PIPE
+        )
+    except ProcessError:
+        log_out = await git_cmd(
+            "log", f"--format={format}", "--max-count=1", branch, out=PIPE
+        )
+    return log_out.splitlines()[0].strip().decode()
+
+
+async def git_no_edit(branch: str, *args: str) -> None:
+    git_author_email = await git_log_one(branch, "%aE")
+    git_author_name = await git_log_one(branch, "%aN")
+    git_committer_email = await git_log_one(branch, "%cE")
+    git_committer_name = await git_log_one(branch, "%cN")
+    await cmd_env(
+        "git",
+        *args,
+        env={
+            "EDITOR": "true",
+            "GIT_AUTHOR_EMAIL": git_author_email,
+            "GIT_AUTHOR_NAME": git_author_name,
+            "GIT_COMMITTER_EMAIL": git_committer_email,
+            "GIT_COMMITTER_NAME": git_committer_name,
+        },
+        err=None,
+        log=False,
+    )
 
 
 async def git_gather_branches() -> tuple[list[str], list[str]]:
@@ -100,7 +128,7 @@ async def git_cherry_pick_one(local_branch: str, *args: str) -> None:
     except ProcessError:
         await cmd("sh", "-c", *args, log=False)
         await git_cmd("add", "--update", ".")
-        await git_no_edit("cherry-pick", "--continue")
+        await git_no_edit(local_branch, "cherry-pick", "--continue")
     finally:
         await git_cmd("switch", "-C", local_branch)
 
@@ -123,7 +151,7 @@ async def git_rebase_one(local_branch: str, execute: str, *args: str) -> None:
         await cmd("sh", "-c", *args, log=False)
         await git_cmd("add", "--update")
         try:
-            await git_no_edit("rebase", "--continue")
+            await git_no_edit(local_branch, "rebase", "--continue")
         except ProcessError:
             continue
         break
