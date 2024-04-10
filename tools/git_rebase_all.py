@@ -4,7 +4,6 @@ from asyncio import run
 from asyncio.subprocess import PIPE
 from itertools import combinations
 from math import factorial
-from os import environ
 from re import match
 from sys import argv
 from typing import Sequence
@@ -20,6 +19,10 @@ async def git_diff(*args: str) -> bool:
     except ProcessError:
         return False
     return True
+
+
+async def git_no_edit(*args: str) -> None:
+    await cmd_env("git", *args, env={"EDITOR": "true"}, err=None, log=False)
 
 
 async def git_gather_branches() -> tuple[list[str], list[str]]:
@@ -96,14 +99,10 @@ async def git_cherry_pick_one(local_branch: str, *args: str) -> None:
         await git_cmd("cherry-pick", local_branch)
     except ProcessError:
         await cmd("sh", "-c", *args, log=False)
-        await git_cmd("add", "--update")
-        try:
-            await cmd_env(
-                "git", "cherry-pick", "--continue", env={"EDITOR": "true"}, log=False
-            )
-        except ProcessError:
-            await git_cmd("cherry-pick", "--skip")
-    await git_cmd("switch", "-C", local_branch)
+        await git_cmd("add", "--update", ".")
+        await git_no_edit("cherry-pick", "--continue")
+    finally:
+        await git_cmd("switch", "-C", local_branch)
 
 
 async def git_rebase_one(local_branch: str, execute: str, *args: str) -> None:
@@ -124,9 +123,7 @@ async def git_rebase_one(local_branch: str, execute: str, *args: str) -> None:
         await cmd("sh", "-c", *args, log=False)
         await git_cmd("add", "--update")
         try:
-            await cmd_env(
-                "git", "rebase", "--continue", env={"EDITOR": "true"}, log=False
-            )
+            await git_no_edit("rebase", "--continue")
         except ProcessError:
             continue
         break
@@ -146,5 +143,4 @@ async def git_rebase_all(execute: str, *args: str, disable_bars: bool | None) ->
 
 if __name__ == "__main__":
     with main():
-        environ["EDITOR"] = "true"
         run(git_rebase_all(*argv[1:], disable_bars=None))
