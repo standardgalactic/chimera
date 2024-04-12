@@ -72,6 +72,19 @@ async def git_rev_list(*args: str) -> bytes:
     ).strip()
 
 
+async def remove_branches(branch_graph: dict[str, set[str]]) -> None:
+    await git_cmd("switch", "stable")
+    if "stable" not in branch_graph:
+        return
+    remote_branches = branch_graph.pop("stable")
+    await git_cmd(
+        "push", "--delete", "origin", *remote_branches.union(branch_graph.keys())
+    )
+    await git_cmd("branch", "--delete", *remote_branches)
+    for remote in remote_branches.union(branch_graph.keys()):
+        del branch_graph[remote]
+
+
 async def report_branch_graph(
     remote_branches: Sequence[str],
     local_branches: Sequence[str],
@@ -106,6 +119,7 @@ async def report_branch_graph(
                     branches |= branch_graph[remote]
                 if remote in branches:
                     branches.remove(remote)
+    await remove_branches(branch_graph)
     for remote, branches in branch_graph.items():
         await get_logger().ainfo(f"{remote} -> {' '.join(sorted(branches))}")
 
