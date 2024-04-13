@@ -1,5 +1,21 @@
 ---
 jobs:
+  clangformat:
+    concurrency:
+      cancel-in-progress: ${{ github.ref != 'refs/heads/stable' }}
+      group: clangformat-${{ github.workflow }}-${{ github.ref }}
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4.1.1
+        with:
+          filter: tree:0
+      - name: Lint c++ code
+        uses: ./
+        with:
+          run: >
+            python tools/g_ls_tree.py cpp h hpp |
+            xargs --no-run-if-empty --null --
+            clang-format --dry-run -style=file -Werror
   corpus-retest:
     concurrency:
       cancel-in-progress: ${{ github.ref != 'refs/heads/stable' }}
@@ -81,6 +97,22 @@ jobs:
           run: |
             rustup default stable
             python tools/cmake_ninja.py
+  rustformat:
+    concurrency:
+      cancel-in-progress: ${{ github.ref != 'refs/heads/stable' }}
+      group: rustformat-${{ github.workflow }}-${{ github.ref }}
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4.1.1
+        with:
+          filter: tree:0
+      - name: Lint rust code
+        uses: ./
+        with:
+          run: >
+            rustup default stable &&
+            find . -name Cargo.toml
+            -exec cargo fmt --all --check --manifest-path '{}' --verbose ';'
 
 name: CMake
 
@@ -88,17 +120,18 @@ name: CMake
 on:
   push:
     paths:
+      - .clang-format
       - .github/workflows/cmake.yml
       - "**.cpp"
       - "**.h"
       - "**.hpp"
       - "**.py"
-      - action.yml
+      - "**/*.rs"
+      - "**/Cargo.lock"
+      - "**/Cargo.toml"
       - cmake/**
       - CMakeLists.txt
       - external/**
       - oxidation/**
-      - requirements.txt
-      - tools/requirements.txt
       - unit_tests/fuzz/cases.json
   workflow_dispatch: ~

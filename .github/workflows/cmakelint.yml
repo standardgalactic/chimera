@@ -22,11 +22,6 @@ on:
     paths:
       - .cmakelintrc
       - .github/workflows/cmakelint.yml
-      - action.yml
       - cmake/**
       - CMakeLists.txt
-      - requirements.txt
-      - tools/action.py
-      - tools/asyncio_cmd.py
-      - tools/requirements.txt
   workflow_dispatch: ~

@@ -24,12 +24,7 @@ on:
   push:
     paths:
       - .github/workflows/ansible-lint.yml
-      - action.yml
-      - requirements.txt
-      - tools/action.py
-      - tools/asyncio_cmd.py
       - tools/boot.yml
       - tools/devcontainer.yml
       - tools/docker.yml
-      - tools/requirements.txt
   workflow_dispatch: ~
