@@ -1,7 +1,6 @@
 # chimera
 
 [![Ansible Lint](https://github.com/asakatida/chimera/actions/workflows/ansible-lint.yml/badge.svg)](https://github.com/asakatida/chimera/actions/workflows/ansible-lint.yml)
-[![ClangFormat](https://github.com/asakatida/chimera/actions/workflows/clang-format.yml/badge.svg)](https://github.com/asakatida/chimera/actions/workflows/clang-format.yml)
 [![CMake](https://github.com/asakatida/chimera/actions/workflows/cmake.yml/badge.svg)](https://github.com/asakatida/chimera/actions/workflows/cmake.yml)
 [![Cmake Lint](https://github.com/asakatida/chimera/actions/workflows/cmakelint.yml/badge.svg)](https://github.com/asakatida/chimera/actions/workflows/cmakelint.yml)
 [![CodeCov](https://github.com/asakatida/chimera/actions/workflows/codecov.yml/badge.svg)](https://github.com/asakatida/chimera/actions/workflows/codecov.yml)
