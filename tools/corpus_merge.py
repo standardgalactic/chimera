@@ -5,13 +5,35 @@ from pathlib import Path
 from sys import argv
 
 from asyncio_cmd import main
+from chimera_utils import rmdir
 from cmake_codecov import cmake_codecov
 from corpus_freeze import corpus_freeze
-from corpus_utils import corpus_gather, corpus_merge, corpus_trim
+from corpus_utils import corpus_gather, corpus_trim, fuzz_test
+from structlog import get_logger
 
 SOURCE = Path(__file__).parent.parent.resolve()
 FUZZ = SOURCE / "unit_tests" / "fuzz"
 CORPUS = FUZZ / "corpus"
+CORPUS_ORIGINAL = FUZZ / "corpus_original"
+
+
+async def corpus_merge(disable_bars: bool | None) -> None:
+    rmdir(CORPUS_ORIGINAL)
+    CORPUS.rename(CORPUS_ORIGINAL)
+    CORPUS.mkdir(exist_ok=True, parents=True)
+    if errors := await fuzz_test(
+        "-merge=1",
+        "-reduce_inputs=1",
+        "-shrink=1",
+        CORPUS,
+        *(path for path in CORPUS_ORIGINAL.rglob("*") if path.is_dir()),
+    ):
+        error = errors.pop()
+        for error in errors:
+            await get_logger().aerror(f"Extra Error: {error}")
+        raise error
+    rmdir(CORPUS_ORIGINAL)
+    corpus_trim(disable_bars=disable_bars)
 
 
 async def corpus_merge_main(base_reference: str = "HEAD") -> None:

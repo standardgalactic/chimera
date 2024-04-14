@@ -10,7 +10,7 @@ from typing import Iterable, Match, TypeVar
 
 from asyncio_as_completed import as_completed
 from asyncio_cmd import chunks, cmd, cmd_flog, git_cmd, splitlines
-from chimera_utils import IN_CI, rmdir
+from chimera_utils import IN_CI
 from crash_reset import crash_reset
 from structlog import get_logger
 from tqdm import tqdm
@@ -245,26 +245,6 @@ async def corpus_gather_new(
     corpus_trim(disable_bars=disable_bars)
 
 
-async def corpus_merge(disable_bars: bool | None) -> None:
-    rmdir(CORPUS_ORIGINAL)
-    CORPUS.rename(CORPUS_ORIGINAL)
-    CORPUS.mkdir(exist_ok=True, parents=True)
-    if errors := await fuzz_test(
-        "-merge=1",
-        "-reduce_inputs=1",
-        "-shrink=1",
-        CORPUS,
-        *(path for path in CORPUS_ORIGINAL.rglob("*") if path.is_dir()),
-    ):
-        error = errors.pop()
-        if errors:
-            for error in errors:
-                await get_logger().aerror(f"Extra Error: {error}")
-        raise error
-    rmdir(CORPUS_ORIGINAL)
-    corpus_trim(disable_bars=disable_bars)
-
-
 async def corpus_objects(
     *paths: str,
     base_reference: str,
@@ -358,7 +338,6 @@ async def corpus_retest() -> None:
         )
     for done in CORPUS.rglob(".done"):
         done.unlink()
-    await corpus_merge(disable_bars=None)
 
 
 def corpus_trim_one(fuzz: Iterable[Path], disable_bars: bool | None) -> None:
