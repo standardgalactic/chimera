@@ -30,8 +30,7 @@ async def _schedule_tasks(coroutines: Iterator[Task[T]], limit: int) -> list[T]:
 
 
 async def as_completed(
-    coroutines: Iterable[Coroutine[object, object, T]],
-    limit: int = DEFAULT_LIMIT,
+    coroutines: Iterable[Coroutine[object, object, T]], limit: int = DEFAULT_LIMIT
 ) -> list[T]:
     if IN_CI:
         return [await coroutine for coroutine in coroutines]

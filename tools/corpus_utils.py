@@ -284,10 +284,7 @@ async def corpus_gather(
     corpus_trim(disable_bars=disable_bars)
 
 
-async def corpus_gather_new(
-    *paths: str,
-    disable_bars: bool | None,
-) -> None:
+async def corpus_gather_new(*paths: str, disable_bars: bool | None) -> None:
     for path in paths:
         Path(path).mkdir(exist_ok=True, parents=True)
         for sha, case in await corpus_objects_new(path, disable_bars=disable_bars):
