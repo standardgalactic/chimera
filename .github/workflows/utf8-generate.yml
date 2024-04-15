@@ -21,7 +21,7 @@ jobs:
             clang-format -style=file -i
       - continue-on-error: true
         if: github.ref == 'refs/heads/stable'
-        uses: stefanzweifel/git-auto-commit-action@v5.0.0
+        uses: stefanzweifel/git-auto-commit-action@v5.0.1
         with:
           branch: utf8-generate-grammar
           commit_message: Update utf8 grammar.
