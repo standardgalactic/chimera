@@ -22,11 +22,7 @@ async def corpus_merge(disable_bars: bool | None) -> None:
     CORPUS.rename(CORPUS_ORIGINAL)
     CORPUS.mkdir(exist_ok=True, parents=True)
     if errors := await fuzz_test(
-        "-merge=1",
-        "-reduce_inputs=1",
-        "-shrink=1",
-        CORPUS,
-        *(path for path in CORPUS_ORIGINAL.rglob("*") if path.is_dir()),
+        "-merge=1", "-reduce_inputs=1", "-shrink=1", CORPUS, *CORPUS_ORIGINAL.iterdir()
     ):
         error = errors.pop()
         for error in errors:

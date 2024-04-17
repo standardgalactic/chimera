@@ -334,7 +334,7 @@ async def corpus_retest() -> None:
     while await regression_log():
         await get_logger().ainfo(
             "Regression failed, retrying with"
-            f" {len([path for path in CORPUS.rglob('*') if path.is_file()])} cases"
+            f" {sum(len(list(path.iterdir())) for path in CORPUS.iterdir())} cases"
         )
     for done in CORPUS.rglob(".done"):
         done.unlink()
@@ -375,8 +375,8 @@ def corpus_trim(disable_bars: bool | None) -> None:
     CRASHES.mkdir(exist_ok=True, parents=True)
     for file in (
         file
-        for glob in ("crash-*", "leak-*", "timeout-*")
-        for file in SOURCE.rglob(glob)
+        for crash in ("crash-*", "leak-*", "timeout-*")
+        for file in SOURCE.rglob(crash)
     ):
         file.rename(CRASHES / sha(file))
     while True:
@@ -432,12 +432,8 @@ async def regression(
         (
             cmd_flog(fuzz, *args)
             for args in (
-                frozenset(
-                    path
-                    for path in corpus.glob("*")
-                    if path.is_file() and path.name != ".done"
-                )
-                for corpus in CORPUS.glob("*")
+                sorted(path for path in corpus.iterdir())
+                for corpus in CORPUS.iterdir()
                 if not (corpus / ".done").exists()
             )
             for fuzz in fuzzers
@@ -453,12 +449,8 @@ async def regression_log() -> list[Exception]:
         for exc in await as_completed(
             regression_log_one(fuzz, *args)
             for args in (
-                frozenset(
-                    path
-                    for path in corpus.glob("*")
-                    if path.is_file() and path.name != ".done"
-                )
-                for corpus in CORPUS.glob("*")
+                sorted(path for path in corpus.iterdir())
+                for corpus in CORPUS.iterdir()
                 if not (corpus / ".done").exists()
             )
             for fuzz in fuzz_star()

@@ -15,12 +15,7 @@ async def fuzz(fuzzer: str, dictionary: str, *dirs: str) -> None:
         "-reduce_inputs=1",
         "-shrink=1",
         "-use_value_profile=1",
-        *(
-            path
-            for directory in dirs
-            for path in Path(directory).rglob("*")
-            if path.is_dir()
-        ),
+        *(path for directory in dirs for path in Path(directory).iterdir()),
         log=False,
     )
 

@@ -12,7 +12,7 @@ from ninja import ninja
 
 
 async def apply_patches() -> None:
-    for patch in Path("patches").glob("*"):
+    for patch in Path("patches").iterdir():
         external = Path("external") / patch.name
         if (
             await cmd("git", "-C", external, "diff", out=PIPE)

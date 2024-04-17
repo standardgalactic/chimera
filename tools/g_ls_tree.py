@@ -31,14 +31,14 @@ async def g_ls_tree(
             if exclude.match(str(path)) is None
         ]
         return CACHE[cache_key]
-    rglob = (path for arg in args for path in SOURCE.rglob(f"*.{arg}"))
+    files = (path for arg in args for path in SOURCE.rglob(f"*.{arg}"))
     CACHE[cache_key] = sorted(
         Path(path)
         for path in frozenset(
             line
             for lines in await as_completed(
                 git_cmd("ls-files", "--", *args, out=PIPE)
-                for args in chunks(rglob, 4096)
+                for args in chunks(files, 4096)
             )
             for line in splitlines(lines)
         )
