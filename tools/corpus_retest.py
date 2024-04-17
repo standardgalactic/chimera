@@ -1,6 +1,7 @@
 """corpus_retest.py."""
 
 from asyncio import run
+from pathlib import Path
 from sys import argv
 
 from asyncio_cmd import main
@@ -18,7 +19,7 @@ async def corpus_retest_main(build: str, ref: str = "") -> None:
         await ninja(build, "corpus")
     corpus_trim(disable_bars=None)
     if ref != "refs/heads/stable":
-        await corpus_merge(disable_bars=None)
+        await corpus_merge(build=Path(build), disable_bars=None)
     await regression(build)
 
 

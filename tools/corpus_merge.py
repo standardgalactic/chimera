@@ -26,12 +26,17 @@ async def cmd_check(*args: object) -> Exception | None:
         return error
 
 
-async def corpus_merge(disable_bars: bool | None) -> None:
+async def corpus_merge(build: Path, disable_bars: bool | None) -> None:
     rmdir(CORPUS_ORIGINAL)
     CORPUS.rename(CORPUS_ORIGINAL)
     CORPUS.mkdir(exist_ok=True, parents=True)
     if errors := await fuzz_test(
-        "-merge=1", "-reduce_inputs=1", "-shrink=1", CORPUS, *CORPUS_ORIGINAL.iterdir()
+        "-merge=1",
+        "-reduce_inputs=1",
+        "-shrink=1",
+        CORPUS,
+        *CORPUS_ORIGINAL.iterdir(),
+        build=build,
     ):
         error = errors.pop()
         for error in errors:
@@ -48,15 +53,17 @@ async def corpus_merge_main(base_reference: str = "HEAD") -> None:
     await corpus_gather(
         "unit_tests/fuzz/corpus", base_reference=base_reference, disable_bars=None
     )
-    await corpus_merge(disable_bars=None)
+    await corpus_merge(build=Path("build"), disable_bars=None)
 
 
-async def fuzz_test(*args: object) -> list[Exception]:
-    if not fuzz_star():
+async def fuzz_test(*args: object, build: Path = Path("build")) -> list[Exception]:
+    if not fuzz_star(build):
         raise FileNotFoundError("No fuzz targets built")
     return [
         exc
-        for exc in await as_completed(cmd_check(fuzz, *args) for fuzz in fuzz_star())
+        for exc in await as_completed(
+            cmd_check(fuzz, *args) for fuzz in fuzz_star(build)
+        )
         if exc is not None
     ]
 

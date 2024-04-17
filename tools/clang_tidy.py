@@ -8,18 +8,15 @@ from g_ls_tree import g_ls_tree
 
 async def clang_tidy(build: str) -> None:
     await as_completed(
-        (
-            cmd(
-                "clang-tidy",
-                f"-p={build}",
-                *ci_args("-fix-errors", "-fix-notes", "-fix", invert=True),
-                "-quiet",
-                *files,
-                out=None,
-            )
-            for files in chunks(await g_ls_tree("cpp"), 3)
-        ),
-        limit=4,
+        cmd(
+            "clang-tidy",
+            f"-p={build}",
+            *ci_args("-fix-errors", "-fix-notes", "-fix", invert=True),
+            "-quiet",
+            *files,
+            out=None,
+        )
+        for files in chunks(await g_ls_tree("cpp"), 3)
     )
 
 
