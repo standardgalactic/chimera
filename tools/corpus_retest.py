@@ -1,18 +1,12 @@
 """corpus_retest.py."""
 
 from asyncio import run
-from pathlib import Path
 from sys import argv
 
 from asyncio_cmd import main
 from cmake_codecov import cmake_codecov
 from corpus_utils import corpus_retest, corpus_trim, regression
 from ninja import ninja
-
-SOURCE = Path(__file__).parent.parent.resolve()
-FUZZ = SOURCE / "unit_tests" / "fuzz"
-CORPUS = FUZZ / "corpus"
-CRASHES = FUZZ / "crashes"
 
 
 async def corpus_retest_main(build: str, ref: str = "") -> None:

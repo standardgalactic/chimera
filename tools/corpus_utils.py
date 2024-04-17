@@ -23,9 +23,7 @@ DIRECTORIES = ("corpus", "crashes")
 SOURCE = Path(__file__).parent.parent.resolve()
 FUZZ = SOURCE / "unit_tests" / "fuzz"
 CORPUS = FUZZ / "corpus"
-CORPUS_ORIGINAL = FUZZ / "corpus_original"
 CRASHES = FUZZ / "crashes"
-CORPUS.mkdir(exist_ok=True, parents=True)
 LENGTH = 14
 
 T = TypeVar("T")
