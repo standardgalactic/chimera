@@ -113,16 +113,16 @@ async def cmd_env(
     )
 
 
-async def _cmd_flog(*args: str, out: str | None = None) -> bytes:
+async def _cmd_flog(*args: str, out: Path | None = None) -> bytes:
     if out is None:
         proc = await create_subprocess_exec(*args, stderr=DEVNULL, stdout=DEVNULL)
         return await communicate(*args, err=b"logs in /dev/null\n", proc=proc)
-    with Path(out).open("ab") as ostream:
+    with out.open("wb") as ostream:
         proc = await create_subprocess_exec(*args, stderr=ostream, stdout=ostream)
         return await communicate(*args, err=f"logs in {out}\n".encode(), proc=proc)
 
 
-async def cmd_flog(*args: object, out: str | None = None) -> bytes:
+async def cmd_flog(*args: object, out: Path | None = None) -> bytes:
     return await _cmd_flog(*(str(arg) for arg in args), out=out)
 
 

@@ -464,7 +464,7 @@ async def regression_log_one(fuzzer: Path, *chunk: Path) -> Exception | None:
     log_file = Path("/tmp") / f"{fuzzer.name}-{chunk[0].parent.name}.log"
     log_file.write_bytes(b"")
     try:
-        await cmd_flog(fuzzer, *chunk, out=str(log_file))
+        await cmd_flog(fuzzer, *chunk, out=log_file)
     except Exception as err:
         return err
     finally:
