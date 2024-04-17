@@ -13,10 +13,10 @@ async def corpus_retest_main(build: str, ref: str = "") -> None:
     await cmake_codecov("fuzzers", "unit-test")
     await cmake_codecov("test")
     await corpus_retest()
-    await regression(build)
     if ref == "refs/heads/stable":
         await ninja(build, "corpus")
     corpus_trim(disable_bars=None)
+    await regression(build)
 
 
 if __name__ == "__main__":

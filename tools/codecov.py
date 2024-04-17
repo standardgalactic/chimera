@@ -1,6 +1,6 @@
 """codecov.py"""
 
-from asyncio import gather, run
+from asyncio import run
 from os import chdir, environ
 from pathlib import Path
 from sys import argv
@@ -29,11 +29,8 @@ async def codecov(llvm_profile_lcov_arg: str) -> None:
     llvm_profile_dir.mkdir(exist_ok=True, parents=True)
     llvm_profile_lcov = Path(llvm_profile_lcov_arg).resolve()
     llvm_profile_lcov.parent.mkdir(exist_ok=True, parents=True)
-    await gather(
-        ninja("build", "-k0", "test"),
-        regression("build", return_exceptions=True),
-        return_exceptions=True,
-    )
+    await ninja("build", "test")
+    await regression("build", return_exceptions=True)
     await cmd(
         "llvm-profdata",
         "merge",

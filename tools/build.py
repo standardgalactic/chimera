@@ -12,8 +12,8 @@
 # python tools/ninja.py "${debug_root}"
 # python tools/ninja.py "${release_root}"
 # python tools/ninja.py "${debug_root}" check-rand
-# python tools/ninja.py "${debug_root}" regression
 # python tools/ninja.py "${debug_root}" corpus
+# python tools/ninja.py "${debug_root}" regression
 # python tools/ninja.py "${debug_root}" spec
 # python tools/ninja.py "${release_root}" spec
 
