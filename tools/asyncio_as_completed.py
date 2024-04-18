@@ -1,4 +1,4 @@
-from asyncio import FIRST_COMPLETED, CancelledError, Task, create_task, wait
+from asyncio import FIRST_COMPLETED, CancelledError, Task, TaskGroup, wait
 from os import cpu_count
 from sys import exc_info
 from typing import Coroutine, Iterable, Iterator, TypeVar
@@ -37,10 +37,15 @@ async def _list(iter: Iterator[Task[T]], return_exceptions: bool) -> list[T]:
             raise cancelled
 
 
-async def _next(background_tasks: set[Task[T]], coroutine: Task[T]) -> T:
+async def _next(
+    group: TaskGroup,
+    background_tasks: set[Task[T]],
+    coroutine: Coroutine[object, object, T],
+) -> T:
     try:
         done, pending = await wait(
-            background_tasks | {coroutine}, return_when=FIRST_COMPLETED
+            background_tasks | {group.create_task(coroutine)},
+            return_when=FIRST_COMPLETED,
         )
         return await done.pop()
     finally:
@@ -48,10 +53,16 @@ async def _next(background_tasks: set[Task[T]], coroutine: Task[T]) -> T:
         background_tasks |= done | pending
 
 
-def _schedule_tasks(coroutines: Iterator[Task[T]], limit: int) -> Iterator[Task[T]]:
-    background_tasks = {coroutine for coroutine, _ in zip(coroutines, range(limit - 1))}
+def _schedule_tasks(
+    group: TaskGroup, coroutines: Iterable[Coroutine[object, object, T]], limit: int
+) -> Iterator[Task[T]]:
+    background_tasks = {
+        group.create_task(coroutine)
+        for coroutine, _ in zip(coroutines, range(limit - 1))
+    }
     yield from (
-        create_task(_next(background_tasks, coroutine)) for coroutine in coroutines
+        group.create_task(_next(group, background_tasks, coroutine))
+        for coroutine in coroutines
     )
     yield from background_tasks
 
@@ -61,7 +72,8 @@ async def as_completed(
     limit: int = DEFAULT_LIMIT,
     return_exceptions: bool = False,
 ) -> list[T]:
-    return await _list(
-        _schedule_tasks((create_task(coroutine) for coroutine in coroutines), limit),
-        return_exceptions=return_exceptions,
-    )
+    async with TaskGroup() as group:
+        return await _list(
+            _schedule_tasks(group, coroutines, limit),
+            return_exceptions=return_exceptions,
+        )
