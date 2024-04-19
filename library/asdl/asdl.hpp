@@ -38,22 +38,53 @@ namespace chimera::library::asdl {
     template <typename... Types>
     struct Impl {
       using List = metal::list<Types...>;
-      using ValueT = metal::apply<metal::lambda<std::variant>, List>;
-      Impl() : value(std::make_shared<ValueT>()) {}
+      using ValueT = std::variant<Types...>;
+      Impl() : value(nullptr) {}
+      Impl(const Impl &impl) : value(nullptr) {
+        if (impl.value != nullptr) {
+          value = new ValueT{*impl.value};
+        }
+      }
+      Impl(Impl &&impl) noexcept : value(nullptr) {
+        using std::swap;
+        swap(value, impl.value);
+      }
+      ~Impl() {
+        if (value != nullptr) {
+          using std::swap;
+          ValueT *leftover = nullptr;
+          swap(value, leftover);
+        }
+      }
       template <typename Type,
                 typename = std::enable_if_t<metal::contains<List, Type>() != 0>>
-      Impl(Type &&type)
-          : value(std::make_shared<ValueT>(std::forward<Type>(type))) {}
+      Impl(Type &&type) : value(new ValueT{std::forward<Type>(type)}) {}
+      Impl &operator=(const Impl &impl) {
+        if (this != &impl) {
+          *value = *impl.value;
+        }
+        return *this;
+      }
+      Impl &operator=(Impl &&impl) noexcept {
+        if (this != &impl) {
+          using std::swap;
+          swap(value, impl.value);
+        }
+        return *this;
+      }
       template <typename Type,
                 typename = std::enable_if_t<metal::contains<List, Type>() != 0>>
       auto operator=(Type &&type) -> Impl & {
-        value = std::make_shared<ValueT>(ValueT{std::forward<Type>(type)});
+        value = new ValueT{std::forward<Type>(type)};
         return *this;
       }
       template <typename Type,
                 typename = std::enable_if_t<metal::contains<List, Type>() != 0>>
       [[nodiscard]] auto get() const noexcept -> std::optional<const Type> {
-        if (auto *asdl = std::get_if<Type>(value.get()); asdl != nullptr) {
+        if (value == nullptr) {
+          return {};
+        }
+        if (auto *asdl = std::get_if<Type>(value); asdl != nullptr) {
           return *asdl;
         }
         return {};
@@ -61,7 +92,10 @@ namespace chimera::library::asdl {
       template <typename Type, typename Visitor,
                 typename = std::enable_if_t<metal::contains<List, Type>() != 0>>
       [[nodiscard]] auto update_if(Visitor &&visitor) -> bool {
-        if (auto *asdl = std::get_if<Type>(value.get()); asdl != nullptr) {
+        if (value == nullptr) {
+          return false;
+        }
+        if (auto *asdl = std::get_if<Type>(value); asdl != nullptr) {
           *value = visitor(*asdl);
           return true;
         }
@@ -75,7 +109,7 @@ namespace chimera::library::asdl {
       }
 
     private:
-      std::shared_ptr<ValueT> value;
+      ValueT *value;
     };
   } // namespace detail
   using ExprImpl = detail::Impl<
@@ -427,6 +461,7 @@ namespace chimera::library::asdl {
       if (stack.has_value()) {
         doc_string = stack.template pop<DocString>();
       }
+      stack.clear();
       Ensures(stack.size() == 0);
     }
 

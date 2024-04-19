@@ -8,7 +8,7 @@
 
 namespace chimera::library::grammar {
   using tao::pegtl::at;
-  using tao::pegtl::discard;
+  using discard = tao::pegtl::seq<>;
   using tao::pegtl::eof;
   using tao::pegtl::failure;
   using tao::pegtl::if_must;
