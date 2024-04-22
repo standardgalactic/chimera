@@ -375,6 +375,7 @@ def corpus_trim(disable_bars: bool | None) -> None:
         file
         for crash in ("crash-*", "leak-*", "timeout-*")
         for file in SOURCE.rglob(crash)
+        if file.is_file() and ".git" not in file.parts
     ):
         file.rename(CRASHES / sha(file))
     while True:
