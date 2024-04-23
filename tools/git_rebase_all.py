@@ -3,7 +3,6 @@
 from asyncio import run
 from asyncio.subprocess import PIPE
 from itertools import combinations
-from math import factorial
 from re import match
 from sys import argv
 from typing import Sequence
@@ -96,7 +95,7 @@ async def report_branch_graph(
         combinations(local_branches, 2),
         "Gather common branches",
         disable_bars,
-        factorial(len(local_branches)) // 2 // factorial(len(local_branches) - 2),
+        len(local_branches) * (len(local_branches) - 1) // 2,
     ):
         if not await git_diff(left, right):
             continue
