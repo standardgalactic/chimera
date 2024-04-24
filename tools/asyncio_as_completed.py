@@ -42,11 +42,9 @@ async def _next(
     background_tasks: set[Task[T]],
     coroutine: Coroutine[object, object, T],
 ) -> T:
+    done, pending = background_tasks, {group.create_task(coroutine)}
     try:
-        done, pending = await wait(
-            background_tasks | {group.create_task(coroutine)},
-            return_when=FIRST_COMPLETED,
-        )
+        done, pending = await wait(done | pending, return_when=FIRST_COMPLETED)
         return await done.pop()
     finally:
         background_tasks.clear()
