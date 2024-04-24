@@ -7,12 +7,14 @@ rm -rf "${HOME}/.cargo"
 
 git submodule update --init
 
-curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path
+curl -o rustup.sh https://sh.rustup.rs -sSf
+chmod +x rustup.sh
+./rustup.sh -y --no-modify-path
+rm rustup.sh
 set +ex
 . "${HOME}/.cargo/env"
 set -ex
 rustup default stable
-cargo --version
 
 python3 tools/venv.py venv
 set +ex
@@ -22,9 +24,10 @@ python3 --version
 
 for patch in "$(pwd)/patches"/*; do
     external="external/$(basename "${patch}")"
+    git -C "${external}" clean -dfx
     git -C "${external}" restore .
     git -C "${external}" apply "${patch}"
 done
 
 cmake -DCMAKE_BUILD_TYPE=Release -B . -S .
-make -j8
+make "-j$(nproc --all)"
