@@ -6,7 +6,7 @@ jobs:
       group: clangformat-${{ github.workflow }}-${{ github.ref }}
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4.1.3
+      - uses: actions/checkout@v4.1.4
         with:
           filter: tree:0
       - name: Lint c++ code
@@ -22,7 +22,7 @@ jobs:
       group: corpus-${{ github.workflow }}-${{ github.ref }}
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4.1.3
+      - uses: actions/checkout@v4.1.4
         with:
           fetch-depth: 0
           submodules: true
@@ -50,7 +50,7 @@ jobs:
       CXXFLAGS: -O0 -g -pedantic -DDEBUG -Wall -Wdeprecated -Werror -Wextra -Wpedantic
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4.1.3
+      - uses: actions/checkout@v4.1.4
         with:
           filter: tree:0
           submodules: true
@@ -66,7 +66,7 @@ jobs:
       group: libcpp-${{ github.workflow }}-${{ github.ref }}
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4.1.3
+      - uses: actions/checkout@v4.1.4
         with:
           filter: tree:0
           submodules: true
@@ -87,7 +87,7 @@ jobs:
       CMAKE_BUILD_TYPE: Release
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4.1.3
+      - uses: actions/checkout@v4.1.4
         with:
           filter: tree:0
           submodules: true
@@ -103,7 +103,7 @@ jobs:
       group: rustformat-${{ github.workflow }}-${{ github.ref }}
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4.1.3
+      - uses: actions/checkout@v4.1.4
         with:
           filter: tree:0
       - name: Lint rust code
