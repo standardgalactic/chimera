@@ -42,7 +42,6 @@ async def corpus_merge_main(base_reference: str = "HEAD") -> None:
     await corpus_freeze(
         "unit_tests/fuzz/cases.json", base_reference=base_reference, disable_bars=None
     )
-    corpus_trim(disable_bars=None)
 
 
 if __name__ == "__main__":
