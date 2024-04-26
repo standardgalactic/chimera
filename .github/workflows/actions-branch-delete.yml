@@ -19,7 +19,7 @@ jobs:
               .path != ".github/workflows/actions-branch-delete.yml" and
               .head_branch != "stable"
             ) |
-            {head_branch, cancel_url}
+            {head_branch, pull_requests, cancel_url}
           ' |
           jq --arg head_branch "${BRANCH}"
           'select(
@@ -36,7 +36,7 @@ jobs:
               .status != "in_progress" and
               .head_branch != "stable"
             ) |
-            {head_branch, url}
+            {head_branch, pull_requests, url}
           ' |
           jq --arg head_branch "${BRANCH}"
           'select(
