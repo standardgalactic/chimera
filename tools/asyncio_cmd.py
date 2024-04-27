@@ -5,7 +5,7 @@ from itertools import islice
 from os import environ
 from pathlib import Path
 from sys import exc_info
-from typing import Iterable, Iterator, TypeVar
+from typing import Iterable, Iterator, TypeVar, cast
 
 from chimera_utils import IN_CI
 from structlog import get_logger
@@ -164,6 +164,11 @@ async def git_cmd(*args: object, out: int | None = None) -> bytes:
 def main() -> Iterator[None]:
     try:
         yield
+    except ExceptionGroup as error:
+        process_error = error.subgroup(lambda error: isinstance(error, ProcessError))
+        if process_error:
+            cast(ProcessError, process_error.exceptions[0]).exit()
+        raise error
     except ProcessError as error:
         error.exit()
     except KeyboardInterrupt:

@@ -30,7 +30,10 @@ async def codecov(llvm_profile_lcov_arg: str) -> None:
     llvm_profile_lcov = Path(llvm_profile_lcov_arg).resolve()
     llvm_profile_lcov.parent.mkdir(exist_ok=True, parents=True)
     await ninja("build", "test")
-    await regression("build", return_exceptions=True)
+    try:
+        await regression("build")
+    except Exception:
+        pass
     await cmd(
         "llvm-profdata",
         "merge",
