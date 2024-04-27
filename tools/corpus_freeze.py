@@ -24,24 +24,33 @@ async def corpus_freeze(
     file = Path(output)
     with file.open() as istream:
         cases = {key: value for key, value in load(istream).items()}
+    seen = Path("build/seen.json")
+    if seen.exists():
+        with seen.open() as istream:
+            seen_existing = {key for key in load(istream)}
+    else:
+        seen_existing = set()
     crashes = [
         path for path in Path("unit_tests/fuzz/crashes").rglob("*") if path.is_file()
     ]
-    existing = frozenset(
-        key.strip().decode()
-        for key in await as_completed(
-            c_tqdm(
-                (git_cmd("hash-object", path, out=PIPE) for path in crashes),
-                "Hash corpus",
-                disable_bars,
-                total=len(crashes),
+    existing = (
+        frozenset(
+            key.strip().decode()
+            for key in await as_completed(
+                c_tqdm(
+                    (git_cmd("hash-object", path, out=PIPE) for path in crashes),
+                    "Hash corpus",
+                    disable_bars,
+                    total=len(crashes),
+                )
             )
         )
+        | seen_existing
     )
     for key in existing.intersection(cases.keys()):
         del cases[key]
-    cases.update(
-        (sha, b64encode(compress(obj)).decode())
+    all_cases = {
+        sha: obj
         for sha, obj in await corpus_objects(
             "unit_tests/fuzz/corpus",
             "unit_tests/fuzz/crashes",
@@ -49,10 +58,18 @@ async def corpus_freeze(
             disable_bars=disable_bars,
             exclude=existing.union(cases.keys()),
         )
-        if is_ascii(obj)
+    }
+    seen_existing.update(all_cases.keys())
+    cases.update(
+        (sha, b64encode(compress(obj)).decode())
+        for sha, obj in all_cases.items()
+        if is_ascii(obj) and obj.decode().isprintable()
     )
     with file.open("w") as ostream:
         dump(cases, ostream, indent=4, sort_keys=True)
+    seen.parent.mkdir(parents=True, exist_ok=True)
+    with seen.open("w") as ostream:
+        dump(list(seen_existing), ostream, indent=4, sort_keys=True)
 
 
 async def corpus_freeze_main(output: str) -> None:
