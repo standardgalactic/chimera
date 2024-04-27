@@ -1,4 +1,4 @@
-from asyncio import FIRST_COMPLETED, Task, TaskGroup, wait
+from asyncio import FIRST_COMPLETED, Task, TaskGroup, gather, wait
 from os import cpu_count
 from typing import Coroutine, Iterable, Iterator, TypeVar
 
@@ -17,15 +17,12 @@ async def _next(background_tasks: set[Task[T]], coroutine: Task[T]) -> T:
         background_tasks |= done | pending
 
 
-async def _schedule_tasks(
-    coroutines: Iterator[Task[T]],
-    limit: int = DEFAULT_LIMIT,
-) -> list[T]:
+async def _schedule_tasks(coroutines: Iterator[Task[T]], limit: int) -> list[T]:
     background_tasks = {coroutine for coroutine, _ in zip(coroutines, range(limit - 1))}
     try:
         return [
             await _next(background_tasks, coroutine) for coroutine in coroutines
-        ] + [await task for task in background_tasks]
+        ] + await gather(*background_tasks)
     finally:
         list(coroutines)
 
@@ -36,5 +33,5 @@ async def as_completed(
 ) -> list[T]:
     async with TaskGroup() as group:
         return await _schedule_tasks(
-            (group.create_task(coroutine) for coroutine in coroutines), limit=limit
+            (group.create_task(coroutine) for coroutine in coroutines), limit
         )
