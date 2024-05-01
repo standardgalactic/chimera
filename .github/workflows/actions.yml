@@ -154,6 +154,8 @@ name: Meta Actions
 # yamllint disable-line rule:truthy
 on:
   push:
+    branches:
+      - stable
     paths:
       - .github/workflows/actions.yml
   schedule:
