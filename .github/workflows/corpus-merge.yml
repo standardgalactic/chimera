@@ -25,6 +25,8 @@ name: Corpus Merge
 # yamllint disable-line rule:truthy
 on:
   push:
+    branches:
+      - stable
     paths:
       - .github/workflows/corpus-merge.yml
   schedule:
