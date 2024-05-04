@@ -1,20 +1,29 @@
 """corpus_merge.py"""
 
 from asyncio import run
+from asyncio.subprocess import DEVNULL
 from pathlib import Path
 from sys import argv
 
-from asyncio_cmd import main
+from asyncio_as_completed import as_completed
+from asyncio_cmd import cmd, main
 from chimera_utils import rmdir
 from cmake_codecov import cmake_codecov
-from corpus_freeze import corpus_freeze
-from corpus_utils import corpus_gather, corpus_trim, fuzz_test
+from corpus_utils import corpus_freeze, corpus_gather, corpus_trim, fuzz_star
 from structlog import get_logger
 
 SOURCE = Path(__file__).parent.parent.resolve()
 FUZZ = SOURCE / "unit_tests" / "fuzz"
 CORPUS = FUZZ / "corpus"
 CORPUS_ORIGINAL = FUZZ / "corpus_original"
+
+
+async def cmd_check(*args: object) -> Exception | None:
+    try:
+        await cmd(*args, err=DEVNULL, out=DEVNULL)
+        return None
+    except Exception as error:
+        return error
 
 
 async def corpus_merge(disable_bars: bool | None) -> None:
@@ -40,6 +49,16 @@ async def corpus_merge_main(base_reference: str = "HEAD") -> None:
         "unit_tests/fuzz/corpus", base_reference=base_reference, disable_bars=None
     )
     await corpus_merge(disable_bars=None)
+
+
+async def fuzz_test(*args: object) -> list[Exception]:
+    if not fuzz_star():
+        raise FileNotFoundError("No fuzz targets built")
+    return [
+        exc
+        for exc in await as_completed(cmd_check(fuzz, *args) for fuzz in fuzz_star())
+        if exc is not None
+    ]
 
 
 if __name__ == "__main__":

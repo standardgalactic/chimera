@@ -2,32 +2,19 @@
 
 from itertools import groupby
 from pathlib import Path
-from string import printable
-from typing import Iterable
 
 from asyncio_cmd import main
-from corpus_utils import bucket, gather_paths
+from corpus_utils import bucket, gather_paths, is_ascii
 from structlog import get_logger
-
-
-def is_ascii(data: bytes) -> bool:
-    try:
-        return all(c in printable for c in data.decode())
-    except UnicodeDecodeError:
-        return False
 
 
 def _is_ascii(path: Path) -> bool:
     return is_ascii(path.read_bytes())
 
 
-def corpus_ascii() -> Iterable[Path]:
-    return (path for path in gather_paths() if _is_ascii(path))
-
-
 if __name__ == "__main__":
     with main():
-        paths = sorted(corpus_ascii())
+        paths = sorted(path for path in gather_paths() if _is_ascii(path))
         for file in paths:
             get_logger().info(file)
         for (name, contents), (_, corpus) in zip(
