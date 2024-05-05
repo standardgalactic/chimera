@@ -327,6 +327,7 @@
               - gettext
               - git
               - git-lfs
+              - github-cli
               - grep
               - gzip
               - htop
