@@ -380,7 +380,6 @@ async def corpus_retest() -> None:
     await corpus_gather_new(
         "unit_tests/fuzz/crashes", "unit_tests/fuzz/corpus", disable_bars=None
     )
-    CRASHES.mkdir(exist_ok=True, parents=True)
     crash_reset()
     while await regression_log():
         await get_logger().ainfo(

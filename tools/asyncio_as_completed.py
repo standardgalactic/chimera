@@ -22,9 +22,9 @@ async def _next(background_tasks: set[Task[T]], coroutine: Task[T]) -> T:
 async def _schedule_tasks(coroutines: Iterator[Task[T]], limit: int) -> list[T]:
     background_tasks = {coroutine for coroutine, _ in zip(coroutines, range(limit - 1))}
     try:
-        return [
-            await _next(background_tasks, coroutine) for coroutine in coroutines
-        ] + await gather(*background_tasks)
+        results = [await _next(background_tasks, coroutine) for coroutine in coroutines]
+        results.extend(await gather(*background_tasks))
+        return results
     finally:
         list(coroutines)
 

@@ -19,7 +19,7 @@ jobs:
           branch: corpus-${{ github.run_id }}-merge
           commit_message: Update fuzzing corpus.
           create_branch: true
-          file_pattern: unit_tests/fuzz/corpus
+          file_pattern: unit_tests/fuzz
           repository: ${{ github.workspace }}
 name: Corpus Merge
 # yamllint disable-line rule:truthy
