@@ -20,7 +20,6 @@ python3 tools/venv.py venv
 set +ex
 . venv/bin/activate
 set -ex
-python3 --version
 
 for patch in "$(pwd)/patches"/*; do
     external="external/$(basename "${patch}")"
