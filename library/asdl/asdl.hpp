@@ -52,10 +52,7 @@ namespace chimera::library::asdl {
       }
       ~Impl() {
         if (value != nullptr) {
-          using std::swap;
-          ValueT *leftover = nullptr;
-          swap(value, leftover);
-          Expects(!leftover->valueless_by_exception());
+          destroy();
         }
       }
       template <typename Type,
@@ -70,10 +67,7 @@ namespace chimera::library::asdl {
             Ensures(!impl.value->valueless_by_exception());
             value = new ValueT{*impl.value};
           } else if (value != nullptr) {
-            using std::swap;
-            ValueT *leftover = nullptr;
-            swap(value, leftover);
-            Expects(!leftover->valueless_by_exception());
+            destroy();
           }
         }
         return *this;
@@ -124,6 +118,13 @@ namespace chimera::library::asdl {
       }
 
     private:
+      void destroy() noexcept {
+        using std::swap;
+        ValueT *leftover = nullptr;
+        swap(value, leftover);
+        Ensures(!leftover->valueless_by_exception());
+        delete leftover;
+      }
       ValueT *value;
     };
   } // namespace detail
