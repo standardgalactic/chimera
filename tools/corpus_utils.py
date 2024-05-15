@@ -13,7 +13,7 @@ from string import printable
 from typing import Iterable, Match, TypeVar
 
 from asyncio_as_completed import as_completed
-from asyncio_cmd import chunks, cmd_flog, git_cmd, splitlines
+from asyncio_cmd import cmd_flog, git_cmd, splitlines
 from chimera_utils import IN_CI
 from crash_reset import crash_reset
 from structlog import get_logger
@@ -49,22 +49,32 @@ def c_tqdm(
     return tqdm(iterable, desc=desc, disable=disable, total=total, unit_scale=True)
 
 
-async def commit_count(*paths: str, base_reference: str, diff_filter: str) -> int:
+async def commit_count(*paths: str, base_reference: str) -> int:
     return len(
         list(
             splitlines(
-                await git_cmd(
-                    "log",
-                    *("--all",) if base_reference.startswith("^") else (),
-                    diff_filter,
-                    "--oneline",
-                    base_reference,
-                    "--",
-                    *paths,
-                    out=PIPE,
+                await _commit_log_base(
+                    *paths, args=("--oneline",), base_reference=base_reference
                 )
             )
         )
+    )
+
+
+async def _commit_log_base(
+    *paths: str, args: tuple[str, ...], base_reference: str
+) -> bytes:
+    return await git_cmd(
+        "log",
+        *("--all",) if base_reference.startswith("^") else (),
+        "--break-rewrites=0",
+        "--find-renames=100%",
+        "--no-renames",
+        *args,
+        base_reference,
+        "--",
+        *paths,
+        out=PIPE,
     )
 
 
@@ -73,17 +83,15 @@ async def commit_paths(
 ) -> Iterable[Match[bytes]]:
     return finditer(
         rb"commit:.+:(?P<sha>.+)(?P<paths>(?:\s+(?!commit:).+)+)",
-        await git_cmd(
-            "log",
-            *("--all",) if base_reference.startswith("^") else (),
-            "--date=iso",
-            diff_filter,
-            "--name-only",
-            "--pretty=format:commit:%cd:%h",
-            base_reference,
-            "--",
+        await _commit_log_base(
             *paths,
-            out=PIPE,
+            args=(
+                "--date=iso",
+                "--name-only",
+                "--pretty=format:commit:%cd:%h",
+                diff_filter,
+            ),
+            base_reference=base_reference,
         ),
     )
 
@@ -119,13 +127,11 @@ async def _corpus_creations(
         )
         for match in c_tqdm(
             await commit_paths(
-                *paths, base_reference=base_reference, diff_filter="--diff-filter=A"
+                *paths, base_reference=base_reference, diff_filter="--diff-filter=d"
             ),
             "Commits",
             disable_bars,
-            total=await commit_count(
-                *paths, base_reference=base_reference, diff_filter="--diff-filter=A"
-            ),
+            total=await commit_count(*paths, base_reference=base_reference),
         )
     )
 
@@ -149,8 +155,11 @@ async def corpus_creations_new(
         splitlines(
             await git_cmd(
                 "log",
-                "--diff-filter=A",
+                "--break-rewrites=0",
+                "--diff-filter=d",
+                "--find-renames=100%",
                 "--name-only",
+                "--no-renames",
                 "--pretty=format:",
                 "origin/stable",
                 "--",
@@ -182,9 +191,7 @@ async def corpus_deletions(
             ),
             "Commits",
             disable_bars,
-            total=await commit_count(
-                *paths, base_reference=base_reference, diff_filter="--diff-filter=D"
-            ),
+            total=await commit_count(*paths, base_reference=base_reference),
         )
         for line in splitlines(match["paths"])
         if any(line.startswith(path) for path in paths) and Path(line).exists()
@@ -304,28 +311,19 @@ async def corpus_objects(
         for sha in c_tqdm(
             frozenset(
                 line
-                for lines in (
-                    lines
-                    for completed in await as_completed(
-                        as_completed(
-                            git_cmd(
-                                "ls-tree",
-                                "--full-tree",
-                                "--object-only",
-                                "-r",
-                                item[0],
-                                *chunk,
-                                out=PIPE,
-                            )
-                            for chunk in chunks(item[1], 4096)
-                        )
-                        for item in await corpus_creations(
-                            *paths,
-                            base_reference=base_reference,
-                            disable_bars=disable_bars,
-                        )
+                for lines in await as_completed(
+                    git_cmd(
+                        "ls-tree",
+                        "--full-tree",
+                        "--object-only",
+                        "-r",
+                        commit,
+                        *paths,
+                        out=PIPE,
                     )
-                    for lines in completed
+                    for commit, _ in await corpus_creations(
+                        *paths, base_reference=base_reference, disable_bars=disable_bars
+                    )
                 )
                 for line in splitlines(lines)
             )
@@ -344,26 +342,19 @@ async def corpus_objects_new(
         for sha in c_tqdm(
             frozenset(
                 line
-                for lines in (
-                    lines
-                    for completed in await as_completed(
-                        as_completed(
-                            git_cmd(
-                                "ls-tree",
-                                "--full-tree",
-                                "--object-only",
-                                "-r",
-                                item[0],
-                                *chunk,
-                                out=PIPE,
-                            )
-                            for chunk in chunks(item[1], 4096)
-                        )
-                        for item in await corpus_creations_new(
-                            *paths, disable_bars=disable_bars
-                        )
+                for lines in await as_completed(
+                    git_cmd(
+                        "ls-tree",
+                        "--full-tree",
+                        "--object-only",
+                        "-r",
+                        commit,
+                        *paths,
+                        out=PIPE,
                     )
-                    for lines in completed
+                    for commit, _ in await corpus_creations_new(
+                        *paths, disable_bars=disable_bars
+                    )
                 )
                 for line in splitlines(lines)
             ),
