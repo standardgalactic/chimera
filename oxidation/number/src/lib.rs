@@ -154,8 +154,8 @@ struct Writer {
 }
 
 #[allow(clippy::missing_trait_methods)]
-#[allow(clippy::question_mark_used)]
 impl Write for Writer {
+    #[allow(clippy::question_mark_used)]
     #[inline]
     fn write_str(&mut self, string: &str) -> Result {
         if string.is_empty() {
