@@ -61,18 +61,19 @@ namespace chimera::library::object::number {
     [[nodiscard]] auto is_nan() const -> bool;
     [[nodiscard]] auto imag() const -> Number;
     template <typename OStream>
-    [[nodiscard]] auto debug(OStream &ostream) const -> OStream & {
+    [[nodiscard]] auto &debug(OStream &&ostream) const {
       return repr(ostream);
     }
     template <typename OStream>
-    auto repr(OStream &ostream) const -> OStream & {
+    auto &repr(OStream &&ostream) const {
       auto size = r_repr_len(ref);
       auto buffer = std::vector<std::uint8_t>(size);
       if (r_repr(buffer.data(), size, ref) != 0) {
         throw std::runtime_error("Failed to represent number");
       }
       // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-      return ostream << reinterpret_cast<char *>(buffer.data());
+      return ostream << std::string_view{
+                 reinterpret_cast<char *>(buffer.data()), size};
     }
 
   private:
@@ -82,8 +83,7 @@ namespace chimera::library::object::number {
 } // namespace chimera::library::object::number
 
 template <typename OStream>
-auto operator<<(OStream &ostream,
-                const chimera::library::object::number::Number &number)
-    -> OStream & {
+auto &operator<<(OStream &&ostream,
+                 const chimera::library::object::number::Number &number) {
   return number.debug(ostream);
 }

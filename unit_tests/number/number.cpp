@@ -1,24 +1,39 @@
 #include "object/number/number.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include <limits>
+#include <sstream>
 
 using chimera::library::object::number::Number;
 using NumericLimits = std::numeric_limits<std::uint64_t>;
 
 TEST_CASE("number Number") {
   Number number(0);
+  {
+    std::stringstream stream;
+    stream << number;
+    REQUIRE(stream.str() == "0");
+  }
   const Number other(2);
   REQUIRE(number < other);
   number = other + other;
   REQUIRE(std::uint64_t(number) == 4);
   number = number * other + other;
   REQUIRE(std::uint64_t(number) == 10);
+  REQUIRE(number == Number(10));
   number = other * number + number;
   REQUIRE(std::uint64_t(number) == 30);
+  REQUIRE(number == Number(30));
   number = number - other;
   REQUIRE(std::uint64_t(number) == 28);
+  REQUIRE(number == Number(28));
+  {
+    std::stringstream stream;
+    stream << number;
+    REQUIRE(stream.str() == "28");
+  }
   number = number % Number(3);
   REQUIRE(std::uint64_t(number) == 1);
   number = number - Number(1);
@@ -196,4 +211,5 @@ TEST_CASE("number Number rational costly") {
   REQUIRE(third == (number / massive));
   const auto extra = massive * three;
   REQUIRE(third == (massive / extra));
+  REQUIRE_THAT(double(third), Catch::Matchers::WithinRel(1.0 / 3.0));
 }
