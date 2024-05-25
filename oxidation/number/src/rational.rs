@@ -222,8 +222,10 @@ impl Rational {
     #[inline]
     #[must_use]
     pub fn reduce(self) -> Number {
-        if self.denominator == 0 {
+        if self.denominator == 0 || self.numerator == 1 {
             Number::Rational(self)
+        } else if self.numerator == 0 {
+            0.into()
         } else if self.denominator == 1 {
             self.numerator.into()
         } else {
@@ -231,7 +233,7 @@ impl Rational {
             if gcd == 1 {
                 Number::Rational(self)
             } else if gcd == Number::from(self.denominator.clone()) {
-                self.numerator.into()
+                Number::from(self.numerator).div_floor(gcd)
             } else {
                 Part::try_from(Number::from(self.numerator).div_floor(gcd.clone()))
                     .and_then(|n| {
@@ -439,8 +441,22 @@ impl NumberBase for Rational {
     #[inline]
     #[must_use]
     fn div_floor(self, other: Self) -> Number {
-        self.numerator
-            .div_floor(other.denominator)
-            .div_floor(self.denominator.div_floor(other.numerator))
+        match self / other {
+            Number::Rational(r1) => match r1.reduce() {
+                Number::Rational(r2) => r2.numerator.div_floor(r2.denominator),
+                n @ (Number::Base(_)
+                | Number::Natural(_)
+                | Number::Negative(_)
+                | Number::Imag(_)
+                | Number::Complex(_)
+                | Number::NaN) => n,
+            },
+            n @ (Number::Base(_)
+            | Number::Natural(_)
+            | Number::Negative(_)
+            | Number::Imag(_)
+            | Number::Complex(_)
+            | Number::NaN) => n,
+        }
     }
 }
