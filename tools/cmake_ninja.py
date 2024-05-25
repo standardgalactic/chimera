@@ -16,7 +16,7 @@ async def apply_patches() -> None:
         external = Path("external") / patch.name
         if (
             await cmd("git", "-C", external, "diff", out=PIPE)
-        ).strip() == patch.read_bytes().strip():
+        ) == patch.read_bytes().strip():
             continue
         await cmd("git", "-C", external, "restore", ".")
         await cmd("git", "-C", external, "apply", patch.resolve())

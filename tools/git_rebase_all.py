@@ -66,9 +66,7 @@ async def git_gather_branches() -> tuple[list[str], list[str]]:
 
 
 async def git_rev_list(*args: str) -> bytes:
-    return (
-        await git_cmd("rev-list", "--cherry-pick", "--count", *args, out=PIPE)
-    ).strip()
+    return await git_cmd("rev-list", "--cherry-pick", "--count", *args, out=PIPE)
 
 
 async def remove_branches(

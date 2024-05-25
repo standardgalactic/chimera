@@ -151,7 +151,7 @@ async def communicate(
             raise ProcessError(
                 *args, stdout=cmd_stdout, stderr=cmd_stderr, returncode=returncode or 1
             )
-    return cmd_stdout or b""
+    return (cmd_stdout or b"").strip()
 
 
 async def git_cmd(*args: object, out: int | None = None) -> bytes:
