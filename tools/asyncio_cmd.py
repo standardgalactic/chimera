@@ -135,8 +135,10 @@ async def communicate(
             proc.communicate(input=input) if input else proc.communicate()
         )
     finally:
+        if isinstance(exc_info()[1], CancelledError):
+            return b""
         cmd_stdout = cmd_stdout or b""
-        cmd_stderr = cmd_stderr or b""
+        cmd_stderr = err + (cmd_stderr or b"")
         returncode = proc.returncode
         if returncode is None:
             proc.terminate()
@@ -146,13 +148,9 @@ async def communicate(
             if proc.stdout is not None:
                 cmd_stdout += await proc.stdout.read()
         if returncode != 0:
-            if not isinstance(exc_info()[1], CancelledError):
-                raise ProcessError(
-                    *args,
-                    stdout=cmd_stdout,
-                    stderr=err + cmd_stderr,
-                    returncode=returncode or 1,
-                )
+            raise ProcessError(
+                *args, stdout=cmd_stdout, stderr=cmd_stderr, returncode=returncode or 1
+            )
     return cmd_stdout or b""
 
 
