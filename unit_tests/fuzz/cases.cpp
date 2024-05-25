@@ -42,7 +42,7 @@ namespace chimera::library {
       expression = processContext->parse_expression(input, "<fuzz>");
     } catch (const tao::pegtl::parse_error &) {
       return -1;
-    } catch (const chimera::library::grammar::SyntaxError &) {
+    } catch (const grammar::SyntaxError &) {
       return -1;
     }
     Ensures(expression.has_value());
@@ -69,7 +69,7 @@ namespace chimera::library {
       module = processContext->parse_file(input, "<fuzz>");
     } catch (const tao::pegtl::parse_error &) {
       return -1;
-    } catch (const chimera::library::grammar::SyntaxError &) {
+    } catch (const grammar::SyntaxError &) {
       return -1;
     }
     Ensures(module.has_value());
@@ -96,7 +96,7 @@ namespace chimera::library {
       interactive = processContext->parse_input(input, "<fuzz>");
     } catch (const tao::pegtl::parse_error &) {
       return -1;
-    } catch (const chimera::library::grammar::SyntaxError &) {
+    } catch (const grammar::SyntaxError &) {
       return -1;
     }
     Ensures(interactive.has_value());

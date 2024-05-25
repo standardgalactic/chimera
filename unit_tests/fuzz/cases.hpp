@@ -33,7 +33,7 @@ namespace chimera::library {
       tao::pegtl::parse<Grammar>(std::move(input), std::forward<Args>(args)...);
     } catch (const tao::pegtl::parse_error &) {
       return -1;
-    } catch (const chimera::library::grammar::SyntaxError &) {
+    } catch (const grammar::SyntaxError &) {
       return -1;
     }
     return 0;
@@ -58,7 +58,7 @@ namespace chimera::library {
                               ASDL{});
     } catch (const tao::pegtl::parse_error &) {
       return -1;
-    } catch (const chimera::library::grammar::SyntaxError &) {
+    } catch (const grammar::SyntaxError &) {
       return -1;
     }
     return 0;
