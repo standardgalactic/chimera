@@ -216,20 +216,17 @@ async def corpus_freeze(
     crashes = [
         path for path in Path("unit_tests/fuzz/crashes").rglob("*") if path.is_file()
     ]
-    existing = (
-        frozenset(
-            key.strip().decode()
-            for key in await as_completed(
-                c_tqdm(
-                    (git_cmd("hash-object", path, out=PIPE) for path in crashes),
-                    "Hash corpus",
-                    disable_bars,
-                    total=len(crashes),
-                )
+    existing = {
+        key.strip().decode()
+        for key in await as_completed(
+            c_tqdm(
+                (git_cmd("hash-object", path, out=PIPE) for path in crashes),
+                "Hash corpus",
+                disable_bars,
+                total=len(crashes),
             )
         )
-        | seen_existing
-    )
+    } | seen_existing
     for key in existing.intersection(cases.keys()):
         del cases[key]
     all_cases = {
@@ -260,7 +257,7 @@ async def corpus_gather(
     base_reference: str = environ.get("BASE_REF", "HEAD"),
     disable_bars: bool | None,
 ) -> None:
-    exclude = frozenset(
+    exclude = {
         line.strip().decode()
         for line in await as_completed(
             c_tqdm(
@@ -270,7 +267,7 @@ async def corpus_gather(
                 total=len(list(gather_paths())),
             )
         )
-    )
+    }
     for path in paths:
         Path(path).mkdir(exist_ok=True, parents=True)
         for sha, case in await corpus_objects(
@@ -304,12 +301,12 @@ async def corpus_objects(
     *paths: str,
     base_reference: str,
     disable_bars: bool | None,
-    exclude: frozenset[str] = frozenset(),
+    exclude: set[str] = set(),
 ) -> list[tuple[str, bytes]]:
     return await as_completed(
         corpus_cat(sha)
         for sha in c_tqdm(
-            frozenset(
+            {
                 line
                 for lines in await as_completed(
                     git_cmd(
@@ -326,7 +323,7 @@ async def corpus_objects(
                     )
                 )
                 for line in splitlines(lines)
-            )
+            }
             - exclude,
             "Files",
             disable_bars,
@@ -340,7 +337,7 @@ async def corpus_objects_new(
     return await as_completed(
         corpus_cat(sha)
         for sha in c_tqdm(
-            frozenset(
+            {
                 line
                 for lines in await as_completed(
                     git_cmd(
@@ -357,7 +354,7 @@ async def corpus_objects_new(
                     )
                 )
                 for line in splitlines(lines)
-            ),
+            },
             "Files",
             disable_bars,
         )
@@ -386,13 +383,13 @@ def corpus_trim_one(fuzz: Iterable[Path], disable_bars: bool | None) -> None:
         if name == (file.parent.name + file.name):
             continue
         sha_bucket, name = name[:2], name[2:]
-        if frozenset(
+        if {
             sha(path)
             for path in (
                 FUZZ / directory / sha_bucket / name for directory in DIRECTORIES
             )
             if path.exists()
-        ).difference((src_sha,)):
+        }.difference((src_sha,)):
             raise Increment(
                 f"Collision found, update corpus_trim.py `LENGTH`: {LENGTH}"
             )
@@ -429,10 +426,13 @@ def corpus_trim(disable_bars: bool | None) -> None:
         break
 
 
-def fuzz_output_paths(prefix: bytes, output: bytes) -> frozenset[bytes]:
-    return frozenset(
-        m["path"] for m in finditer(escape(prefix) + rb"\s+(?P<path>\S+)", output)
-    )
+def fuzz_output_paths(prefix: bytes, output: bytes) -> set[bytes]:
+    return {
+        m["path"]
+        for m in finditer(
+            rb"^" + escape(prefix) + rb"\s+(?P<path>\S+)$", output, MULTILINE
+        )
+    }
 
 
 @cache
