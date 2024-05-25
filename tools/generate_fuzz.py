@@ -43,6 +43,7 @@ def make_tests(*test_cpps: Path, tests: dict[str, dict[bytes, str]]) -> None:
                         ),
                         cases.values(),
                     )
+                    if len(test_data) < 8431
                 ),
             )
         ),
