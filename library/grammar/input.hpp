@@ -9,7 +9,6 @@
 #include <cstdint>
 #include <iosfwd>
 #include <stack>
-#include <variant>
 
 namespace chimera::library::grammar {
   using InputBase = tao::pegtl::istream_input<>;

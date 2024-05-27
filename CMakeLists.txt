@@ -89,7 +89,6 @@ add_library(
   OBJECT
   library/object/number/number.cpp
   library/object/object.cpp
-  library/object/reference.cpp
   library/virtual_machine/bin_evaluator.cpp
   library/virtual_machine/bool_evaluator.cpp
   library/virtual_machine/call_evaluator.cpp

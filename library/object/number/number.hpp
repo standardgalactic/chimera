@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <limits>
 #include <numeric>
-#include <variant>
 #include <vector>
 
 // NOLINTBEGIN(readability-redundant-declaration)

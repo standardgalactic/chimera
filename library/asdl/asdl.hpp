@@ -42,6 +42,7 @@ namespace chimera::library::asdl {
       Impl() : value(nullptr) {}
       Impl(const Impl &impl) : value(nullptr) {
         if (impl.value != nullptr) {
+          Ensures(!impl.value->valueless_by_exception());
           value = new ValueT{*impl.value};
         }
       }
@@ -54,6 +55,7 @@ namespace chimera::library::asdl {
           using std::swap;
           ValueT *leftover = nullptr;
           swap(value, leftover);
+          Expects(!leftover->valueless_by_exception());
         }
       }
       template <typename Type,
@@ -61,7 +63,18 @@ namespace chimera::library::asdl {
       Impl(Type &&type) : value(new ValueT{std::forward<Type>(type)}) {}
       Impl &operator=(const Impl &impl) {
         if (this != &impl) {
-          *value = *impl.value;
+          if (impl.value != nullptr && value != nullptr) {
+            Ensures(!impl.value->valueless_by_exception());
+            *value = *impl.value;
+          } else if (impl.value != nullptr) {
+            Ensures(!impl.value->valueless_by_exception());
+            value = new ValueT{*impl.value};
+          } else if (value != nullptr) {
+            using std::swap;
+            ValueT *leftover = nullptr;
+            swap(value, leftover);
+            Expects(!leftover->valueless_by_exception());
+          }
         }
         return *this;
       }
@@ -75,15 +88,18 @@ namespace chimera::library::asdl {
       template <typename Type,
                 typename = std::enable_if_t<metal::contains<List, Type>() != 0>>
       auto operator=(Type &&type) -> Impl & {
-        value = new ValueT{std::forward<Type>(type)};
+        if (value == nullptr) {
+          value = new ValueT{std::forward<Type>(type)};
+        } else {
+          *value = std::forward<Type>(type);
+        }
         return *this;
       }
       template <typename Type,
                 typename = std::enable_if_t<metal::contains<List, Type>() != 0>>
       [[nodiscard]] auto get() const noexcept -> std::optional<const Type> {
-        if (value == nullptr) {
-          return {};
-        }
+        Ensures(value != nullptr);
+        Ensures(!value->valueless_by_exception());
         if (auto *asdl = std::get_if<Type>(value); asdl != nullptr) {
           return *asdl;
         }
@@ -92,9 +108,8 @@ namespace chimera::library::asdl {
       template <typename Type, typename Visitor,
                 typename = std::enable_if_t<metal::contains<List, Type>() != 0>>
       [[nodiscard]] auto update_if(Visitor &&visitor) -> bool {
-        if (value == nullptr) {
-          return false;
-        }
+        Ensures(value != nullptr);
+        Ensures(!value->valueless_by_exception());
         if (auto *asdl = std::get_if<Type>(value); asdl != nullptr) {
           *value = visitor(*asdl);
           return true;
@@ -103,9 +118,9 @@ namespace chimera::library::asdl {
       }
       template <typename Visitor>
       void visit(Visitor &&visitor) const {
-        if (value) {
-          std::visit(std::forward<Visitor>(visitor), *value);
-        }
+        Ensures(value != nullptr);
+        Ensures(!value->valueless_by_exception());
+        std::visit(std::forward<Visitor>(visitor), *value);
       }
 
     private:

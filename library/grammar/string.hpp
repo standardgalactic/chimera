@@ -19,6 +19,7 @@
 #include <numeric>
 #include <string>
 #include <string_view>
+#include <variant>
 
 namespace chimera::library::grammar {
   namespace token {
