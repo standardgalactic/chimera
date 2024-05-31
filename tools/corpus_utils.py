@@ -426,13 +426,10 @@ def corpus_trim(disable_bars: bool | None) -> None:
         break
 
 
-def fuzz_output_paths(prefix: bytes, output: bytes) -> set[bytes]:
-    return {
-        m["path"]
-        for m in finditer(
-            rb"^" + escape(prefix) + rb"\s+(?P<path>\S+)$", output, MULTILINE
-        )
-    }
+def fuzz_output_paths(prefix: bytes, output: bytes) -> frozenset[bytes]:
+    return frozenset(
+        m["path"] for m in finditer(escape(prefix) + rb"\s+(?P<path>\S+)", output)
+    )
 
 
 @cache
