@@ -39,62 +39,50 @@ namespace chimera::library::asdl {
     struct Impl {
       using List = metal::list<Types...>;
       using ValueT = std::variant<Types...>;
-      Impl() : value(nullptr) {}
-      Impl(const Impl &impl) : value(nullptr) {
-        if (impl.value != nullptr) {
-          Ensures(!impl.value->valueless_by_exception());
-          value = new ValueT{*impl.value};
-        }
+      Impl() noexcept = default;
+      Impl(const Impl &impl) {
+        Ensures(impl.value);
+        Ensures(!impl.value->valueless_by_exception());
+        value = std::make_shared<ValueT>(*impl.value);
       }
-      Impl(Impl &&impl) noexcept : value(nullptr) {
-        using std::swap;
-        swap(value, impl.value);
-      }
-      ~Impl() {
-        if (value != nullptr) {
-          destroy();
-        }
-      }
+      Impl(Impl &&impl) noexcept = default;
+      ~Impl() noexcept = default;
       template <typename Type,
                 typename = std::enable_if_t<metal::contains<List, Type>() != 0>>
-      Impl(Type &&type) : value(new ValueT{std::forward<Type>(type)}) {}
+      Impl(Type &&type)
+          : value(std::make_shared<ValueT>(std::forward<Type>(type))) {}
       Impl &operator=(const Impl &impl) {
         if (this != &impl) {
-          if (impl.value != nullptr && value != nullptr) {
+          if (impl.value && value) {
             Ensures(!impl.value->valueless_by_exception());
             *value = *impl.value;
-          } else if (impl.value != nullptr) {
+          } else if (impl.value) {
             Ensures(!impl.value->valueless_by_exception());
-            value = new ValueT{*impl.value};
-          } else if (value != nullptr) {
-            destroy();
+            value = std::make_shared<ValueT>(*impl.value);
+          } else if (value) {
+            Ensures(!value->valueless_by_exception());
+            value.reset();
           }
         }
         return *this;
       }
-      Impl &operator=(Impl &&impl) noexcept {
-        if (this != &impl) {
-          using std::swap;
-          swap(value, impl.value);
-        }
-        return *this;
-      }
+      Impl &operator=(Impl &&impl) noexcept = default;
       template <typename Type,
                 typename = std::enable_if_t<metal::contains<List, Type>() != 0>>
       auto operator=(Type &&type) -> Impl & {
-        if (value == nullptr) {
-          value = new ValueT{std::forward<Type>(type)};
-        } else {
+        if (value) {
           *value = std::forward<Type>(type);
+        } else {
+          value = std::make_shared<ValueT>(std::forward<Type>(type));
         }
         return *this;
       }
       template <typename Type,
                 typename = std::enable_if_t<metal::contains<List, Type>() != 0>>
       [[nodiscard]] auto get() const noexcept -> std::optional<const Type> {
-        Ensures(value != nullptr);
+        Ensures(value);
         Ensures(!value->valueless_by_exception());
-        if (auto *asdl = std::get_if<Type>(value); asdl != nullptr) {
+        if (auto *asdl = std::get_if<Type>(value.get()); asdl != nullptr) {
           return *asdl;
         }
         return {};
@@ -102,9 +90,9 @@ namespace chimera::library::asdl {
       template <typename Type, typename Visitor,
                 typename = std::enable_if_t<metal::contains<List, Type>() != 0>>
       [[nodiscard]] auto update_if(Visitor &&visitor) -> bool {
-        Ensures(value != nullptr);
+        Ensures(value);
         Ensures(!value->valueless_by_exception());
-        if (auto *asdl = std::get_if<Type>(value); asdl != nullptr) {
+        if (auto *asdl = std::get_if<Type>(value.get()); asdl != nullptr) {
           *value = visitor(*asdl);
           return true;
         }
@@ -112,20 +100,13 @@ namespace chimera::library::asdl {
       }
       template <typename Visitor>
       void visit(Visitor &&visitor) const {
-        Ensures(value != nullptr);
+        Ensures(value);
         Ensures(!value->valueless_by_exception());
         std::visit(std::forward<Visitor>(visitor), *value);
       }
 
     private:
-      void destroy() noexcept {
-        using std::swap;
-        ValueT *leftover = nullptr;
-        swap(value, leftover);
-        Ensures(!leftover->valueless_by_exception());
-        delete leftover;
-      }
-      ValueT *value;
+      std::shared_ptr<ValueT> value;
     };
   } // namespace detail
   using ExprImpl = detail::Impl<
