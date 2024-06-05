@@ -74,29 +74,34 @@
               ansible.builtin.file:
                 path: /tmp/llvm.sh
                 state: absent
-            - name: Gather LLVM binaries  # noqa: command-instead-of-shell
-              ansible.builtin.shell: command -v {{ item }}-{{ llvm_version }}
-              register: links
-              with_items:
-                - clang
-                - clang-format
-                - clang-tidy
-                - clang++
-                - llvm-cov
-                - llvm-profdata
-                - scan-build
-            - name: Create LLVM links
-              ansible.builtin.file:
-                dest: /usr/local/bin/{{ item.item }}
-                src: "{{ item.stdout }}"
-                state: link
-              loop: "{{ links.results }}"
             - name: Install packages
               ansible.builtin.package:
                 install_recommends: "{{ install_recommends }}"
                 name:
                   - adduser
                   - sudo
+        - name: Gather LLVM binaries  # noqa: command-instead-of-shell
+          ansible.builtin.shell: command -v {{ item }}-{{ llvm_version }}
+          register: links
+          with_items:
+            - clang
+            - clang++
+        - name: Create LLVM links
+          ansible.builtin.file:
+            dest: /usr/local/bin/{{ item.item }}
+            src: "{{ item.stdout }}"
+            state: link
+          loop: "{{ links.results }}"
+        - name: Create LLVM links
+          ansible.builtin.file:
+            dest: /usr/local/bin/{{ item }}
+            src: /usr/lib/llvm{{ llvm_version }}/bin/{{ item }}
+            state: link
+          loop:
+            - clang-format
+            - clang-tidy
+            - llvm-cov
+            - llvm-profdata
         - name: Install packages
           ansible.builtin.package:
             install_recommends: "{{ install_recommends }}"
