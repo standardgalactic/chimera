@@ -102,6 +102,16 @@
             - clang-tidy
             - llvm-cov
             - llvm-profdata
+        - name: Create LLVM links
+          ansible.builtin.file:
+            mode: "0750"
+            path: /usr/lib/llvm{{ llvm_version }}/lib/clang/{{ llvm_version }}/lib
+            state: directory
+        - name: Create LLVM links
+          ansible.builtin.file:
+            dest: /usr/lib/llvm{{ llvm_version }}/lib/clang/{{ llvm_version }}/lib/linux
+            src: /usr/lib/llvm17/lib/clang/17/lib/linux
+            state: link
         - name: Install packages
           ansible.builtin.package:
             install_recommends: "{{ install_recommends }}"
