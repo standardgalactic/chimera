@@ -42,15 +42,6 @@ add_library(
   library/asdl/parse_module_istream.cpp
   library/grammar/input.cpp)
 
-if(MSVC)
-else()
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(chimera-grammar PRIVATE -Oz)
-  else()
-    target_compile_options(chimera-grammar PRIVATE -Os)
-  endif()
-endif()
-
 target_include_directories(chimera-grammar PUBLIC library stdlib)
 
 target_include_directories(
