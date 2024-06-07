@@ -17,7 +17,7 @@ RUN <<SHELL sh
         libbz2=1.0.8-r6 \
         libffi-dev=3.4.6-r0 \
         libncursesw=6.4_p20240420-r0 \
-        openssl-dev=3.3.0-r2 \
+        openssl-dev=3.3.1-r0 \
         readline-dev=8.2.10-r0 \
         sqlite-dev=3.45.3-r1 \
         xz-dev=5.6.1-r3 \
