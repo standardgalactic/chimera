@@ -52,7 +52,7 @@ types-requests==2.32.0.20240602
 types-tqdm==4.66.0.20240417
 types-urllib3==1.26.25.14
 typing_extensions==4.12.2
-urllib3==2.2.1
+urllib3==2.2.2
 wcmatch==8.5.2
 yamllint==1.35.1
 zipp==3.19.2
