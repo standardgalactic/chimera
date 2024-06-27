@@ -12,7 +12,7 @@ jobs:
           fetch-depth: 0
       - if: ${{ github.event_name == 'workflow_dispatch' }}
         name: TruffleHog OSS Workflow Dispatch
-        uses: trufflesecurity/trufflehog@v3.78.2
+        uses: trufflesecurity/trufflehog@v3.79.0
         with:
           base: ${{ inputs.baseRef }}
           extra_args: --only-verified
@@ -20,7 +20,7 @@ jobs:
           path: ./
       - if: ${{ github.event_name == 'push' }}
         name: TruffleHog OSS Push
-        uses: trufflesecurity/trufflehog@v3.78.2
+        uses: trufflesecurity/trufflehog@v3.79.0
         with:
           # yamllint disable-line rule:line-length
           base: ${{ github.ref != 'refs/heads/stable' && github.event.repository.default_branch || 'HEAD^' }}
